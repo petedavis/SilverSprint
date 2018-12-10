@@ -62,6 +62,7 @@ namespace gfx {
         CheckBoxRef     mConnectionBox;
         CheckBoxRef     mDistanceCheck;
         CheckBoxRef     mTimeTrialBox;
+        CheckBoxRef     mHandicappedBox;
         CheckBoxRef     mRaceLoggingBox;
 
         ToggleBtnRef    mMphKphToggle;

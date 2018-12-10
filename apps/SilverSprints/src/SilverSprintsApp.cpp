@@ -81,6 +81,7 @@ void SilverSprintApp::loadSettings()
         Model::instance().setNumRacers(         config().get("settings", "num_racers", 114.3));
         Model::instance().setRaceLogging(       config().get("settings", "log_races", false));
         Model::instance().setRaceTimeSeconds(   config().get("settings", "race_time", 60));
+		Model::instance().setHandicapedRace(    config().get("settings", "handicapped_race", false));
         // this must be called after the roller diameter is set
         Model::instance().setRaceLengthMeters(  config().get("settings", "race_length_meters", 100));
         
@@ -97,6 +98,7 @@ void SilverSprintApp::writeSettings()
     config().set("settings", "roller_diameter_mm", Model::instance().getRollerDiameterMm());
     config().set("settings", "num_racers", Model::instance().getNumRacers());
     config().set("settings", "log_races", Model::instance().getRaceLogging());
+	config().set("settings", "handicapped_race", Model::instance().getIsHandicapped());
     
     fs::path targetPath = ci::app::getAppPath().parent_path() / fs::path("settings.cfg");
     

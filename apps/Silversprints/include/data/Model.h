@@ -40,9 +40,12 @@ namespace gfx {
         void setRaceLengthMeters( const float &meters );
         const float& getRaceLengthMeters(){ return RaceSettings.raceLengthMeters; }
         const int& getRaceLengthTicks(){ return RaceSettings.totalRaceTicks; }
-        
+		        
         void setNumRacers( const int &num ){ RaceSettings.numRacers = num; }
         const int& getNumRacers(){ return RaceSettings.numRacers; }
+
+		void setHandicapedRace(bool isHandicaped) { RaceSettings.bHandicappedRace = isHandicaped; }
+		bool getIsHandicapped() { return RaceSettings.bHandicappedRace; }
         
         void setRollerDiameterMm( const float &mm );
         const float& getRollerDiameterMm(){ return RaceSettings.mRollerDiameterMm; }
@@ -131,6 +134,7 @@ namespace gfx {
             bool    bHardwareConnected = false;
             bool    bUseKph = true;
             bool    bLogRacesToFile = false;
+			bool    bHandicappedRace = false;
         } RaceSettings;
         
         ci::vec2 mScreenScale, mScreenOffset;

@@ -94,7 +94,16 @@ SettingsView::SettingsView() : bVisible(false)
     mMphKphToggle = std::make_shared<ToggleBtn>("MPH", "KPH", toggleFont, vec2(xPos, yPos));
     mMphKphToggle->setColors( Model::instance().playerColors[0], Color::black() );
     mMphKphToggle->setSelected(ToggleBtn::TOGGLE_SIDE::RIGHT);
-    
+
+	// Handicapped Racing
+    yPos += 160;
+    mLabels.push_back( TextLabel(vec2(xPos, yPos-20), "Handicap Racing") );
+    mHandicappedBox = std::make_shared<CheckBox>(vec2(1043, yPos));
+    mHandicappedBox->setChecked(false);
+    mHandicappedBox->signalOnClick.connect([&](){
+        Model::instance().setHandicapedRace(mHandicappedBox->isChecked());
+    });
+
     // Race Logging
     yPos += 160;
     mLabels.push_back( TextLabel(vec2(xPos, yPos-20), "LOG RACES TO FILE") );
@@ -166,6 +175,7 @@ void SettingsView::onStateChange(APP_STATE newState, APP_STATE lastState)
             mTimeTrialBox->setChecked(true);
             mTxtTime->visible = true;
         }
+		mHandicappedBox->setChecked( Model::instance().getIsHandicapped());
         mRaceLoggingBox->setChecked( Model::instance().getRaceLogging());
         
     }else if(lastState == APP_STATE::SETTINGS){
@@ -252,6 +262,11 @@ void SettingsView::draw()
         {
             gl::ScopedColor scGr( Color::gray(0.55) );
             tFont->drawString("SILVERSPRINT VERSION: " + std::string(SILVERSPRINT_VERSION_STR), vec2(60, 1080- 20));
+        }
+
+		// Handicapped Racing
+        {
+	        mHandicappedBox->draw();
         }
         
         // RACE LOGGING
