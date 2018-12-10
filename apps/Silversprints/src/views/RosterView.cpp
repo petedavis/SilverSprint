@@ -34,8 +34,18 @@ void RosterView::setup(){
         
         tf->bUseScissorTest = false;
         mPlayerNames.push_back(tf);
+
         
-        mCancelRects.push_back( Rectf(1498, yPos, 1555, yPos+52) );
+        CiTextField *tf2 = new CiTextField("0", Rectf(1498, yPos, 1800, yPos+150), ci::Font(loadAsset("fonts/UbuntuMono-R.ttf"), 75) );
+        tf2->mColorStroke = Model::instance().playerColors[i];
+        tf2->mColorFill = Model::instance().playerColors[i];
+        tf2->mColorText = Color::black();
+        tf2->padding = vec2(30,30);
+        
+        tf2->bUseScissorTest = false;
+        mHandicaps.push_back(tf2);
+
+        //mCancelRects.push_back( Rectf(1498, yPos, 1555, yPos+52) );
     }
     
     tFont = ci::gl::TextureFont::create( ci::Font(loadAsset("fonts/UbuntuMono-R.ttf"), 75) );
@@ -96,6 +106,13 @@ void RosterView::animateIn(){
     for( auto it = mPlayerNames.begin(); it!=mPlayerNames.end(); ++it){
         (*it)->visible = true;
     }
+    
+    if (!Model::instance().getIsHandicapped())
+        return;
+
+    for (auto it = mHandicaps.begin(); it != mHandicaps.end(); ++it) {
+        (*it)->visible = true;
+    }
 }
 
 void RosterView::animateOut(){
@@ -109,6 +126,13 @@ void RosterView::animateOut(){
     
     bVisible = false;
     for( auto it = mPlayerNames.begin(); it!=mPlayerNames.end(); ++it){
+        (*it)->visible = false;
+    }
+    
+    if (!Model::instance().getIsHandicapped())
+        return;
+
+    for (auto it = mHandicaps.begin(); it != mHandicaps.end(); ++it) {
         (*it)->visible = false;
     }
 }
@@ -134,9 +158,11 @@ void RosterView::draw(){
         gl::color(1,1,1);
         gl::draw( mBg );
     }
-    
+
+    const bool isHandicapped = Model::instance().getIsHandicapped();
     for(int i=0; i < Model::instance().getNumRacers(); i++){
         mPlayerNames[i]->draw();
+
         
 //        if( mPlayerNames[i]->isEnabled() ){
 //            gl::color( Color::hex(0x717174) );
@@ -156,8 +182,12 @@ void RosterView::draw(){
             gl::drawStrokedCircle(p, 62);
             gl::lineWidth(1.0);
         }
-        
+                
         tFont->drawString( to_string(i+1), p + vec2(-19, 20) );
+        
+        if (isHandicapped) {
+            mHandicaps[i] ->draw();
+        }
     }
     
 //    gui->draw();

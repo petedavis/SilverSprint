@@ -40,8 +40,9 @@ namespace gfx{
         void onStateChange(APP_STATE newState);
         
         std::vector<CiTextField*>   mPlayerNames;
+        std::vector<CiTextField*>   mHandicaps;
         ci::gl::TextureFontRef      tFont;
-        std::vector<ci::Rectf>      mCancelRects;
+        //std::vector<ci::Rectf>      mCancelRects;
         
         ci::gl::TextureRef  mBg, mCancelBtn;
         bool                bVisible;
