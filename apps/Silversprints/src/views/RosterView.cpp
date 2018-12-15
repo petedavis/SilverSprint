@@ -131,6 +131,10 @@ void RosterView::animateOut(){
     
     if (!Model::instance().getIsHandicapped())
         return;
+	
+    for( int i=0; i<mPlayerNames.size(); i++ ){
+        Model::instance().playerData[i]->setHandicapMeters(stoi(mHandicaps[i]->getText()));
+    }
 
     for (auto it = mHandicaps.begin(); it != mHandicaps.end(); ++it) {
         (*it)->visible = false;

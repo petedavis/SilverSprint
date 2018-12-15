@@ -41,6 +41,7 @@ namespace gfx {
             mph = 0;
             maxMph = 0;
             mLastRaceTimeMs = 0;
+			mHandicapMeters = 0;
             
             mSpeedBuffer->reset();
             mMphBuffer.reset(0.0);
@@ -56,14 +57,23 @@ namespace gfx {
         double getMaxKph(){ return maxMph * 1.60934; }
         
         double getPercent(){
-            double racePct = ci::math<double>::clamp((double)curRaceTicks / (double)totalRaceTicks, 0.0, 1.0);
+            double racePct = ci::math<double>::clamp((double)curRaceTicks + getHandicapTicks() / (double)totalRaceTicks, 0.0, 1.0);
             return racePct;
+        }
+
+		double getHandicapTicks()
+        {
+            double oneTickMeters = rollerCircumfMm / 1000.0;
+			double handicapTicks = mHandicapMeters / oneTickMeters;
+
+			return handicapTicks;
         }
         
         double getDistance(){
             double oneTickMeters = rollerCircumfMm / 1000.0;
             double distMeters = oneTickMeters * curRaceTicks;
-            
+
+			distMeters = distMeters + mHandicapMeters;
             return distMeters;
         }
         
@@ -100,6 +110,11 @@ namespace gfx {
         
         void setRollerDiameter( float diameterMm ){
             rollerCircumfMm = diameterMm * M_PI;
+        }
+
+		void setHandicapMeters(int handicapMeters)
+        {
+	        mHandicapMeters = handicapMeters;
         }
         
         const int& getCurrentRaceTicks()
@@ -149,6 +164,7 @@ namespace gfx {
         
         std::string player_name;
         int         totalRaceTicks;
+		int         handicapMeters;
         double      finishTimeMillis;
         ci::Color   playerColor;
         
@@ -246,7 +262,7 @@ namespace gfx {
         // These represent two different strats for determining average speed
         std::shared_ptr<CircBuffer>     mSpeedBuffer;
         CheapCircBuffer<double>         mMphBuffer;
-        
+        int         mHandicapMeters = 0;
         bool        bFinishedRace;
         double      pctComplete;
         float       mph, maxMph;
