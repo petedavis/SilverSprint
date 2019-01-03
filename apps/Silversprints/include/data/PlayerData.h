@@ -31,7 +31,7 @@ namespace gfx {
             mSpeedBuffer = std::make_shared<CircBuffer>(60);
             mMphBuffer.reset(0.0);
         }
-        
+
         void reset(){
             bFinishedRace = false;
             curRaceTicks = 0;
@@ -41,23 +41,22 @@ namespace gfx {
             mph = 0;
             maxMph = 0;
             mLastRaceTimeMs = 0;
-			mHandicapMeters = 0;
-            
+
             mSpeedBuffer->reset();
             mMphBuffer.reset(0.0);
         }
-        
+
         bool didFinishRace(){
             return bFinishedRace;
         }
-        
+
         double getMph(){ return mph; }
         double getKph(){ return getMph() * 1.60934; }
         double getMaxMph(){ return maxMph; }
         double getMaxKph(){ return maxMph * 1.60934; }
-        
+
         double getPercent(){
-            double racePct = ci::math<double>::clamp((double)curRaceTicks + getHandicapTicks() / (double)totalRaceTicks, 0.0, 1.0);
+            double racePct = ci::math<double>::clamp(((double)curRaceTicks + getHandicapTicks()) / (double)totalRaceTicks, 0.0, 1.0);
             return racePct;
         }
 
@@ -68,7 +67,7 @@ namespace gfx {
 
 			return handicapTicks;
         }
-        
+
         double getDistance(){
             double oneTickMeters = rollerCircumfMm / 1000.0;
             double distMeters = oneTickMeters * curRaceTicks;
@@ -76,38 +75,38 @@ namespace gfx {
 			distMeters = distMeters + mHandicapMeters;
             return distMeters;
         }
-        
+
         double getDistanceMeters()
         {
             return getDistance();
         }
-        
+
         double getDistanceFeet()
         {
             return getDistance() * 3.28084;
         }
-        
+
         bool isFinished()
         {
             return bFinishedRace;
         }
-        
+
         void setFinished( const int &finalTimeMillis, const int &finalRaceTicks )
         {
             bFinishedRace = true;
             finishTimeMillis = finalTimeMillis;
-            
+
             lastRaceTicks = curRaceTicks;
             curRaceTicks = finalRaceTicks;
-            
+
             float dist = getDistance();
             float avgSpeed =  dist / finishTimeMillis * 3600;
-            
+
             // 8.7412587413 m/s = 31.46km/hr
-            
+
             CI_LOG_I("Finished " << finalRaceTicks << " :: " << avgSpeed);
         }
-        
+
         void setRollerDiameter( float diameterMm ){
             rollerCircumfMm = diameterMm * M_PI;
         }
@@ -116,23 +115,23 @@ namespace gfx {
         {
 	        mHandicapMeters = handicapMeters;
         }
-        
+
         const int& getCurrentRaceTicks()
         {
             return curRaceTicks;
         }
-        
+
         void updateRaceTicks(const int &numTicks, const int &curRaceMillis)
         {
             //            if(numTicks == curRaceTicks)
             //                return;
-            
+
             lastRaceTicks = curRaceTicks;
             curRaceTicks = numTicks;
             int dtMillis = curRaceMillis - mLastRaceTimeMs;
             int dtTicks = curRaceTicks - lastRaceTicks;
             mLastRaceTimeMs = curRaceMillis;
-            
+
             /*
              {
              mSpeedBuffer->add({curRaceMillis, dtTicks});
@@ -143,7 +142,7 @@ namespace gfx {
              if( mph > maxMph ) maxMph = mph;
              }
              //*/
-            
+
             //*
             // if it's not the first update
             if(dtMillis > 0){
@@ -151,23 +150,23 @@ namespace gfx {
                 double metersMoved = dtTicks * rollerCircumfMm / 1000.0;
                 double secsElapsed = (dtMillis / 1000.0);
                 double kph = (metersMoved / secsElapsed) * 3.6; // 3.6 m/sec = 1 km/hr
-                
+
                 mph = kph * 0.621371;
-                
+
                 mMphBuffer.push(mph);
                 mph = mMphBuffer.getAverage();
-                
+
                 if( mph > maxMph ) maxMph = mph;
             }
             //*/
         }
-        
+
         std::string player_name;
         int         totalRaceTicks;
 		int         handicapMeters;
         double      finishTimeMillis;
         ci::Color   playerColor;
-        
+
     private:
         struct CircBuffer {
         public:
@@ -177,16 +176,16 @@ namespace gfx {
                     d = {0, 0};
                 }
             }
-            
+
             void reset()
             {
                 for( int i=0; i<mDataVec.size(); i++){
                     mDataVec[i] = {0.0, 0.0};
                 }
-                
+
                 bFirstRun = true;
             }
-            
+
             //! Args are a pair, where first = the current time in milliseconds, second = the number of ticks since that last update
             void add( const std::pair<int, int> &timeAndTicks ){
                 if(bFirstRun){
@@ -195,12 +194,12 @@ namespace gfx {
                     }
                     bFirstRun = false;
                 }
-                
+
                 mDataVec[dex] = timeAndTicks;
                 if(++dex >= mDataVec.size())
                     dex = 0;
             }
-            
+
             //! Returns the average number of ticks per second in the recorded time period.
             double getAverageTicksSec()
             {
@@ -209,7 +208,7 @@ namespace gfx {
                 int earliestTimeMs = mDataVec[early].first;
                 int latestTimeMs = mDataVec[ld].first;
                 double dtSecs = (latestTimeMs - earliestTimeMs) / 1000.0;
-                
+
                 float totalTicks = 0.0;
                 for( auto d : mDataVec){
                     if(d.second > 0.0){
@@ -218,13 +217,13 @@ namespace gfx {
                 }
                 return totalTicks / dtSecs;
             }
-            
+
         protected:
             int dex = 0;
             bool bFirstRun = true;
             std::vector< std::pair<int, int> > mDataVec;
         };
-        
+
         // ----------------------------------------------------------------------
         template<typename T>
         struct CheapCircBuffer {
@@ -232,19 +231,19 @@ namespace gfx {
                 mSize = size;
                 mData.resize(mSize);
             }
-            
+
             void reset(const T &defaultVal){
                 for( auto d : mData){
                     d = defaultVal;
                 }
             }
-            
+
             void push(const T &val ){
                 mData[dex] = val;
                 if(++dex >= mSize) dex = 0;
             }
-            
-            
+
+
             const T& getAverage(){
                 T t = 0;
                 for( auto d : mData){
@@ -257,10 +256,10 @@ namespace gfx {
             int dex = 0;
             int mSize = 30;
             T   mCurAverage;
-            
+
             std::vector<T> mData;
         };
-        
+
         // These represent two different strats for determining average speed
         std::shared_ptr<CircBuffer>     mSpeedBuffer;
         CheapCircBuffer<double>         mMphBuffer;
@@ -272,5 +271,5 @@ namespace gfx {
         int         curRaceTicks, lastRaceTicks;
         int         mLastRaceTimeMs = 0;
     };
-    
+
 }
