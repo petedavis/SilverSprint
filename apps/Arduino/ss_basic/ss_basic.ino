@@ -15,7 +15,7 @@
  *
  */
 
-#define VERSION "SS_v0.1.7"
+#define VERSION "SS_v0.1.8"
 #define FALSE_START_TICKS 4
 #define MAX_RACERS 4
 
@@ -49,10 +49,12 @@ int lastCountDown;
 
 char charBuff[8];
 unsigned int charBuffPos = 0;
+unsigned int riderTicksReceivedIndex = 0;
 bool isReceivingRaceLength = false;
+bool isReceivingRiderRaceLenghts = false;
 bool isReceivingTimeLength = false;
 
-int raceLengthTicks = 20;
+int raceLengthTicks[4] = {20,20,20,20};
 int raceLengthSecs = 60;
 int previousFakeTickMillis = 0;
 
@@ -108,25 +110,56 @@ void checkSerial()
             if(isReceivingRaceLength){
                 isReceivingRaceLength = false;
                 charBuff[charBuffPos] = '\0'; // null char to terminate the string
-                raceLengthTicks = atoi(charBuff);
+                int allRiderRaceLengthTicks = atoi(charBuff);
+                raceLengthTicks[0] = allRiderRaceLengthTicks;
+                raceLengthTicks[1] = allRiderRaceLengthTicks;
+                raceLengthTicks[2] = allRiderRaceLengthTicks;
+                raceLengthTicks[3] = allRiderRaceLengthTicks;
+
                 Serial.print("L:");
-                Serial.println(raceLengthTicks);  // send confirmation
+                Serial.println(allRiderRaceLengthTicks);  // send confirmation
             }else if(isReceivingTimeLength){
                 isReceivingTimeLength = false;
                 charBuff[charBuffPos] = '\0'; // null char to terminate the string
                 raceLengthSecs = atoi(charBuff);
+            } else if (isReceivingRiderRaceLenghts) {
+                isReceivingRiderRaceLenghts = false;
+                
+                charBuff[charBuffPos] = '\0'; // null char to terminate the string
+                int riderRaceLengthTicks = atoi(charBuff);
+                raceLengthTicks[riderTicksReceivedIndex] = riderRaceLengthTicks;
+
+                Serial.print("R[");
+                Serial.print(riderTicksReceivedIndex);
+                Serial.print("]:");
+                Serial.println(raceLengthTicks[riderTicksReceivedIndex]);  // send confirmation
+                
+                // Increment the recieve index.
+                riderTicksReceivedIndex++;
             }
             return;
         }
         // ----------------------------------------------------
-        if(isReceivingRaceLength || isReceivingTimeLength) {
+        if(isReceivingRaceLength || isReceivingTimeLength || isReceivingRiderRaceLenghts) {
             charBuff[charBuffPos] = val;
             charBuffPos++;
-        }else {
+        } 
+        else {
             if(val == 'l') {
                 memset(charBuff, 0, sizeof(charBuff));
                 charBuffPos = 0;
                 isReceivingRaceLength = true;
+            }
+            else if(val == 'r') {
+                memset(charBuff, 0, sizeof(charBuff));
+                charBuffPos = 0;
+
+                // Cycle index value 0 > 3. Should receive 4 consecutive 'r' messages;
+                if (riderTicksReceivedIndex >= 4) {
+                    riderTicksReceivedIndex = 0;
+                }
+
+                isReceivingRiderRaceLenghts = true;
             }
             else if(val == 't') {
                 memset(charBuff, 0, sizeof(charBuff));
@@ -287,7 +320,7 @@ void checkDistanceBased()
     bool bFinished = true;
     for(int i=0; i<MAX_RACERS; i++) {
         // check to see if they have finished
-        if(racerFinishTimeMillis[i] == 0 && racerTicks[i] >= raceLengthTicks) {
+        if(racerFinishTimeMillis[i] == 0 && racerTicks[i] >= raceLengthTicks[i]) {
             racerFinishTimeMillis[i] = currentTimeMillis;
             
             Serial.print(i);

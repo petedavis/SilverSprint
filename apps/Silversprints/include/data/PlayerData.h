@@ -56,23 +56,19 @@ namespace gfx {
         double getMaxKph(){ return maxMph * 1.60934; }
 
         double getPercent(){
-            double racePct = ci::math<double>::clamp(((double)curRaceTicks + getHandicapTicks()) / (double)totalRaceTicks, 0.0, 1.0);
+            double racePct = ci::math<double>::clamp((double)(curRaceTicks + mHandicapTicks) / (double)totalRaceTicks, 0.0, 1.0);
             return racePct;
         }
 
-		double getHandicapTicks()
+		int getPlayerRaceDistanceTicks()
         {
-            double oneTickMeters = rollerCircumfMm / 1000.0;
-			double handicapTicks = mHandicapMeters / oneTickMeters;
-
-			return handicapTicks;
+	        return totalRaceTicks - mHandicapTicks;
         }
 
         double getDistance(){
             double oneTickMeters = rollerCircumfMm / 1000.0;
             double distMeters = oneTickMeters * curRaceTicks;
 
-			distMeters = distMeters + mHandicapMeters;
             return distMeters;
         }
 
@@ -114,6 +110,11 @@ namespace gfx {
 		void setHandicapMeters(int handicapMeters)
         {
 	        mHandicapMeters = handicapMeters;
+
+            double oneTickMeters = rollerCircumfMm / 1000.0;
+
+			// Round rather than truncate.
+			mHandicapTicks = static_cast<int>(round(mHandicapMeters / oneTickMeters));
         }
 
         const int& getCurrentRaceTicks()
@@ -264,6 +265,7 @@ namespace gfx {
         std::shared_ptr<CircBuffer>     mSpeedBuffer;
         CheapCircBuffer<double>         mMphBuffer;
         int         mHandicapMeters = 0;
+        int         mHandicapTicks = 0;
         bool        bFinishedRace;
         double      pctComplete;
         float       mph, maxMph;
