@@ -39,13 +39,13 @@ void RaceText::draw( gfx::PlayerData *data, const ci::vec2 &offset )
         // COLORED GRID ----------
         gl::translate( 150, 0);
         if( !data->didFinishRace() ){
-            gl::drawSolidRect( Rectf(0,       0,      1670,   w) );   // T
+            gl::drawSolidRect( Rectf(0,       0,      1690,   w) );   // T
             gl::drawSolidRect( Rectf(0,       0,      w,      68) );  // L
-            gl::drawSolidRect( Rectf(1670-w,  0,      1670,   68) );  // R
-            gl::drawSolidRect( Rectf(0,       68-w,   1670,   68) );  // B
+            gl::drawSolidRect( Rectf(1690-w,  0,      1690,   68) );  // R
+            gl::drawSolidRect( Rectf(0,       68-w,   1690,   68) );  // B
             gl::drawSolidRect( Rectf(1462-w,  w,      1462, 68-w) );  // MID
         }else{
-            gl::drawSolidRect( Rectf(0,       0,      1670,   68) );  // BG
+            gl::drawSolidRect( Rectf(0,       0,      1690,   68) );  // BG
             gl::color( Color::black() );
             gl::drawSolidRect( Rectf(1462-w,  w,      1462, 68-w) );  // MID
         }
@@ -76,16 +76,16 @@ void RaceText::draw( gfx::PlayerData *data, const ci::vec2 &offset )
         // DISTANCE AND TIME
         if( Model::instance().getCurrentRaceType() == Model::RACE_TYPE::RACE_TYPE_TIME ){
             if(Model::instance().getUsesKph()){
-                Model::instance().texFont->drawString(toDec(data->getDistanceMeters(), 2) + "m", vec2(1485,44));
+                Model::instance().texFont->drawString(toDec(data->getDistanceMeters(), 2) + "m", vec2(1480,44));
             }else{
-                Model::instance().texFont->drawString(toDec(data->getDistanceFeet(), 2) + "ft", vec2(1485,44));
+                Model::instance().texFont->drawString(toDec(data->getDistanceFeet(), 2) + "ft", vec2(1480,44));
             }
         }
         else if(Model::instance().getCurrentRaceType() == Model::RACE_TYPE::RACE_TYPE_DISTANCE){
             if( data->didFinishRace() ){
-                Model::instance().texFont->drawString(sb::utils::millisToTimestamp( data->finishTimeMillis ), vec2(1485,44) );
+                Model::instance().texFont->drawString(sb::utils::millisToTimestamp( data->finishTimeMillis ), vec2(1480,44) );
             }else{
-                Model::instance().texFont->drawString(sb::utils::millisToTimestamp( Model::instance().elapsedRaceTimeMillis ), vec2(1485,44) );
+                Model::instance().texFont->drawString(sb::utils::millisToTimestamp( Model::instance().elapsedRaceTimeMillis, 2), vec2(1480,44) );
             }
         }
         
