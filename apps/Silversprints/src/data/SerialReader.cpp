@@ -105,6 +105,7 @@ void SerialReader::updateSerialThread()
                         std::string tmp;
                         mSendBuffer.popBack(&tmp);
                     }
+					console() << "found port, now send stop" << endl;
                     stopRace();
                     getVersion();
 
@@ -132,19 +133,29 @@ void SerialReader::updateSerialThread()
             if( getElapsedSeconds() - mLastKeepAlive > 1.0){
                 keepAlive();
             }
+           
+			if (mSerial->isOpen()) {
 
-            // Send queued commands to arduino
-            for(int i=0; i<mSendBuffer.getSize(); i++){
-                std::string msgToSend;
-                mSendBuffer.popBack( &msgToSend );
+				// Send queued commands to arduino
+				if (mSendBuffer.getSize() > 0) {
+					CI_LOG_I("Sending buffer over to arduino") << mSendBuffer.getSize();
+				}
 
-                CI_LOG_I("Sending :: ") << msgToSend;
+				for (int i = 0; i < mSendBuffer.getSize(); i++) {
+					std::string msgToSend;
+					mSendBuffer.popBack(&msgToSend);
 
-                mSerial->writeString( msgToSend );
-            }
+					CI_LOG_I("Sending :: ") << msgToSend << " :: " << mSerial->isOpen();
 
-            // receive from arduino
-            readSerial();
+					mSerial->writeString(msgToSend);
+				}
+
+				// receive from arduino
+				readSerial();
+			}
+			else {
+				CI_LOG_I("Serial is not open");
+			}
         }
     }
 }
@@ -250,126 +261,132 @@ void SerialReader::parseFromBuffer()
 
 //        if(numCmds > 0)
 //            CI_LOG_I("Num cmds " << numCmds);
+    
+	for (int i = 0; i < numCmds; i++) {
+		std::vector<std::string> cmdArgs;
+		mReceiveBuffer.popBack(&cmdArgs);
 
-    for( int i=0; i<numCmds; i++) {
-        std::vector<std::string> cmdArgs;
-        mReceiveBuffer.popBack( &cmdArgs );
+		std::string cmd = cmdArgs[0];
+		std::string args = (cmdArgs.size() > 1) ? cmdArgs[1] : "";
 
-        std::string cmd = cmdArgs[0];
-        std::string args = (cmdArgs.size() > 1) ? cmdArgs[1] : "";
+		if (cmd == "") {
+			return;
+		}
+		// ------------------------------------------------------------------------------
+		// KIOSK MODE
+		if (cmd == "G") {
+			if (StateManager::instance().getCurrentRaceState() == RACE_STATE::RACE_STOPPED) {
+				StateManager::instance().changeRaceState(RACE_STATE::RACE_STARTING);
+			}
+		}
+		else if (cmd == "S") {
+			StateManager::instance().changeRaceState(RACE_STATE::RACE_STOPPED);
+		}
 
-        if(cmd == ""){
-            return;
-        }
-        // ------------------------------------------------------------------------------
-        // KIOSK MODE
-        if(cmd == "G"){
-            if(StateManager::instance().getCurrentRaceState() == RACE_STATE::RACE_STOPPED){
-                StateManager::instance().changeRaceState( RACE_STATE::RACE_STARTING );
-            }
-        }else if(cmd == "S"){
-            StateManager::instance().changeRaceState( RACE_STATE::RACE_STOPPED );
-        }
+		// ------------------------------------------------------------------------------
+		// RACE FINISH (ars are the time the race finished in millis)
+		else if (cmd == "0F") {
+			CI_LOG_I("RACER 1 FINISHED " + args);
+			StateManager::instance().signalRacerFinish.emit(0, fromString<int>(args), Model::instance().playerData[0]->getCurrentRaceTicks());
+			if (isRaceFinished()) { StateManager::instance().signalOnRaceFinished.emit(); }
+		}
+		else if (cmd == "1F") {
+			CI_LOG_I("RACER 2 FINISHED " + args);
+			StateManager::instance().signalRacerFinish.emit(1, fromString<int>(args), Model::instance().playerData[1]->getCurrentRaceTicks());
+			if (isRaceFinished()) { StateManager::instance().signalOnRaceFinished.emit(); }
+		}
+		else if (cmd == "2F") {
+			CI_LOG_I("RACER 3 FINISHED " + args);
+			StateManager::instance().signalRacerFinish.emit(2, fromString<int>(args), Model::instance().playerData[2]->getCurrentRaceTicks());
+			if (isRaceFinished()) { StateManager::instance().signalOnRaceFinished.emit(); }
+		}
+		else if (cmd == "3F") {
+			CI_LOG_I("RACER 4 FINISHED " + args);
+			StateManager::instance().signalRacerFinish.emit(3, fromString<int>(args), Model::instance().playerData[3]->getCurrentRaceTicks());
+			if (isRaceFinished()) { StateManager::instance().signalOnRaceFinished.emit(); }
+		}
 
-        // ------------------------------------------------------------------------------
-        // RACE FINISH (ars are the time the race finished in millis)
-        else if(cmd == "0F"){
-            CI_LOG_I("RACER 1 FINISHED " + args);
-            StateManager::instance().signalRacerFinish.emit(0, fromString<int>(args), Model::instance().playerData[0]->getCurrentRaceTicks());
-            if( isRaceFinished() ){ StateManager::instance().signalOnRaceFinished.emit(); }
-        }
-        else if( cmd == "1F"){
-            CI_LOG_I("RACER 2 FINISHED " +args);
-            StateManager::instance().signalRacerFinish.emit(1, fromString<int>(args), Model::instance().playerData[1]->getCurrentRaceTicks());
-            if( isRaceFinished() ){ StateManager::instance().signalOnRaceFinished.emit(); }
-        }
-        else if( cmd == "2F"){
-            CI_LOG_I("RACER 3 FINISHED " + args);
-            StateManager::instance().signalRacerFinish.emit(2, fromString<int>(args), Model::instance().playerData[2]->getCurrentRaceTicks());
-            if( isRaceFinished() ){ StateManager::instance().signalOnRaceFinished.emit(); }
-        }
-        else if( cmd == "3F"){
-            CI_LOG_I("RACER 4 FINISHED " + args);
-            StateManager::instance().signalRacerFinish.emit(3, fromString<int>(args), Model::instance().playerData[3]->getCurrentRaceTicks());
-            if( isRaceFinished() ){ StateManager::instance().signalOnRaceFinished.emit(); }
-        }
+		// ------------------------------------------------------------------------------
+		// RACE PROGRESS (args are race ticks, then race time millis)
+		else if (cmd == "R") {
+			std::vector<std::string> rdata;
+			boost::split(rdata, args, boost::is_any_of(","));
 
-        // ------------------------------------------------------------------------------
-        // RACE PROGRESS (args are race ticks, then race time millis)
-        else if(cmd == "R"){
-            std::vector<std::string> rdata;
-            boost::split(rdata, args, boost::is_any_of(","));
+			int raceMillis = fromString<int>(rdata.back());
+			//float dt = raceMillis - Model::instance().elapsedRaceTimeMillis;
 
-            int raceMillis = fromString<int>( rdata.back() );
-            //float dt = raceMillis - Model::instance().elapsedRaceTimeMillis;
+			for (int i = 0; i < rdata.size() - 1; i++) {
+				//                if(i == 0){
+				//                    console() <<fromString<int>(rdata[i]) << endl;
+				//                }
+				Model::instance().playerData[i]->updateRaceTicks(fromString<int>(rdata[i]), raceMillis);
+			}
 
-            for( int i=0; i<rdata.size()-1; i++){
-                //                if(i == 0){
-                //                    console() <<fromString<int>(rdata[i]) << endl;
-                //                }
-                Model::instance().playerData[i]->updateRaceTicks( fromString<int>(rdata[i]), raceMillis );
-            }
+			Model::instance().elapsedRaceTimeMillis = raceMillis;
+			Model::instance().startTimeMillis = ci::app::getElapsedSeconds() * 1000.0 - Model::instance().elapsedRaceTimeMillis;
+		}
 
-            Model::instance().elapsedRaceTimeMillis = raceMillis;
-            Model::instance().startTimeMillis = ci::app::getElapsedSeconds() * 1000.0 - Model::instance().elapsedRaceTimeMillis;
-        }
+		// ------------------------------------------------------------------------------
+		// SETTINGS
+		else if (cmd == "CD") {
+			CI_LOG_I("SerialReader :: Countdown :: " + args);
 
-        // ------------------------------------------------------------------------------
-        // SETTINGS
-        else if( cmd == "CD"){
-            CI_LOG_I("SerialReader :: Countdown :: " + args);
+			if (args == "3") {
+				StateManager::instance().changeRaceState(RACE_STATE::RACE_COUNTDOWN_3);
+			}
+			else if (args == "2") {
+				StateManager::instance().changeRaceState(RACE_STATE::RACE_COUNTDOWN_2);
+			}
+			else if (args == "1") {
+				StateManager::instance().changeRaceState(RACE_STATE::RACE_COUNTDOWN_1);
+			}
+			else if (args == "0") {
+				Model::instance().startTimeMillis = ci::app::getElapsedSeconds() * 1000.0;
 
-            if( args == "3" ){
-                StateManager::instance().changeRaceState( RACE_STATE::RACE_COUNTDOWN_3 );
-            }else if( args == "2"){
-                StateManager::instance().changeRaceState( RACE_STATE::RACE_COUNTDOWN_2 );
-            }else if( args == "1"){
-                StateManager::instance().changeRaceState( RACE_STATE::RACE_COUNTDOWN_1 );
-            }else if( args == "0" ){
-                Model::instance().startTimeMillis = ci::app::getElapsedSeconds() * 1000.0;
+				StateManager::instance().changeRaceState(RACE_STATE::RACE_COUNTDOWN_GO);
+				StateManager::instance().changeRaceState(RACE_STATE::RACE_RUNNING);
+			}
+		}
+		else if (cmd == "FS") {
+			CI_LOG_I("SerialReader :: False start. Racer: " + args);    // 0 based
+			//            StateManager::instance().changeRaceState( RACE_STATE::RACE_FALSE_START );
+			//            StateManager::instance().changeRaceState( RACE_STATE::RACE_STOPPED );
+		}
+		else if (cmd == "L") {   // After sending a race length, it will send this confirmation
+			CI_LOG_I("SerialReader :: Race Length " + args + ".");
+		}
+		else if (cmd.rfind('R', 0) == 0) {   // After sending a rider race length, it will send this confirmation
+			CI_LOG_I("SerialReader :: " + cmd + " Race Length " + args + ".");
+		}
+		else if (cmd == "M") {   // Mock mode confirmation
+			CI_LOG_I("SerialReader :: Mock mode turned " + args);
+		}
+		else if (cmd == "V") {   // version
+			mFirmwareVersion = args;
+			Model::instance().mFirmwareVersion = args;
+			Model::instance().mSerialConnectionState = Model::SerialConnectionState::CONNECTED_SILVERSPRINTS;
+		}
 
-                StateManager::instance().changeRaceState( RACE_STATE::RACE_COUNTDOWN_GO );
-                StateManager::instance().changeRaceState( RACE_STATE::RACE_RUNNING );
-            }
-        }
-        else if( cmd == "FS"){
-            CI_LOG_I("SerialReader :: False start. Racer: " + args);    // 0 based
-            //            StateManager::instance().changeRaceState( RACE_STATE::RACE_FALSE_START );
-            //            StateManager::instance().changeRaceState( RACE_STATE::RACE_STOPPED );
-        }
-        else if( cmd == "L"){   // After sending a race length, it will send this confirmation
-            CI_LOG_I("SerialReader :: Race Length " + args + ".");
-        }
-        else if( cmd.rfind('R', 0) == 0){   // After sending a rider race length, it will send this confirmation
-            CI_LOG_I("SerialReader :: " + cmd + " Race Length " + args + ".");
-        }
-        else if( cmd == "M"){   // Mock mode confirmation
-            CI_LOG_I("SerialReader :: Mock mode turned " + args);
-        }
-        else if(cmd == "V"){   // version
-            mFirmwareVersion = args;
-            Model::instance().mFirmwareVersion = args;
-            Model::instance().mSerialConnectionState = Model::SerialConnectionState::CONNECTED_SILVERSPRINTS;
-        }
+		else {
+			CI_LOG_I("SerialReader :: Unrecognized command :: ");
+			//*
+			try {
+				CI_LOG_I(cmd);
+			}
+			catch (std::exception exc) {
+				CI_LOG_EXCEPTION("Error parsing arduino", exc);
+			}
 
-        else{
-            CI_LOG_I("SerialReader :: Unrecognized command :: ");
-            /*
-             try {
-             CI_LOG_I(cmd);
-             }catch (std::exception exc) {
-             CI_LOG_EXCEPTION("Error parsing arduino", exc);
-             }
-
-             if(args != ""){
-             try {
-             CI_LOG_I(" with arg :: '" + args + "'");
-             }catch (std::exception exc) {
-             CI_LOG_EXCEPTION("Error parsing arduino", exc);
-             }
-             }
-             */
-        }
+			if (args != "") {
+				try {
+					CI_LOG_I(" with arg :: '" + args + "'");
+				}
+				catch (std::exception exc) {
+					CI_LOG_EXCEPTION("Error parsing arduino", exc);
+				}
+			}
+			//*/
+		}
     }
 }
 
@@ -433,7 +450,8 @@ void SerialReader::setRaceType( Model::RACE_TYPE raceType)
 
 void SerialReader::sendSerialMessage( std::string msg )
 {
-    std::string toSend = msg + "\n";
+	console() << "Sending serial message :: " << msg << endl;
+    std::string toSend = msg + '\n';
     mSendBuffer.pushFront( toSend );
 }
 
