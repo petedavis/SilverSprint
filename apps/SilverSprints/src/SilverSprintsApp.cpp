@@ -185,5 +185,5 @@ CINDER_APP( SilverSprintApp, RendererGl(RendererGl::Options().msaa(8)), [&](Silv
     settings->setFrameRate(60.0);
     settings->setWindowSize(1280, 700);
     //  settings->setWindowPos((1400-1280)/2, 0 );
-    settings->setTitle("SilverSprint");
+    settings->setTitle("Handicap SilverSprint");
 })

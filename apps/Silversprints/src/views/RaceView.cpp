@@ -20,7 +20,8 @@ RaceView::RaceView() : bVisible(false) {
 void RaceView::setup()
 {
     mBg = gl::Texture::create( loadImage( loadAsset("img/bgGrad.png") ) );
-    mLogo = gl::Texture::create( loadImage( loadAsset("img/opensprintsLogo.png") ) );
+    mLogo = gl::Texture::create( loadImage( loadAsset("img/logo.png") ) );
+    mLogo2 = gl::Texture::create( loadImage( loadAsset("img/opensprintsLogo.png") ) );
     
     mDialCenter = vec2(1920.0 * 0.5, 612.0);
     
@@ -188,6 +189,11 @@ void RaceView::draw()
     if( mLogo ){
         gl::color( 1, 1, 1, 1 );
         gl::draw( mLogo, vec2(1920, 1080) - vec2(50,50) - vec2(mLogo->getSize()) );
+    }
+	
+    if( mLogo2 ){
+        gl::color( 1, 1, 1, 1 );
+        gl::draw( mLogo2, vec2(50, 1030) - vec2(0 , mLogo2->getSize().y));
     }
     
     ci::ColorA tmpCol;
